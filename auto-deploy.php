@@ -104,42 +104,58 @@ class Deploy {
   /**
   * Executes the necessary commands to deploy the website.
   */
-  public function execute()
-  {
-      try
-      {
-      // http://stackoverflow.com/a/10113231
-      
-          // Make sure we're in the right directory
-          chdir($this->_directory);
-          
-          // Discard any untracked stuff
-          // exec('git clean -df', $output);
-
-          // Discard any changes to tracked files since our last deploy
-          exec('git reset --hard HEAD', $output);
-          // $this->log('Reseting repository... '.implode(' ', $output));
-
-          // Update the local repository
-          exec('git pull '.$this->_remote.' '.$this->_branch, $output);
-          // $this->log('Pulling in changes... '.implode(' ', $output));
-
-          // Secure the .git directory
-          exec('chmod -R og-rx .git');
-          // $this->log('Securing .git directory... ');
-
-          if (is_callable($this->post_deploy))
-          {
-              call_user_func($this->post_deploy, $this->_data);
-          }
-
-          $this->log('Deployment successful.');
-      }
-      catch (Exception $e)
-      {
-          $this->log($e, 'ERROR');
-      }
+  public function execute() {
+    try
+    {
+        // Make sure we're in the right directory
+        chdir($this->_directory);
+        
+        // Discard any untracked stuff
+        // exec('git clean -df', $output);
+        
+        exec('git add -A', $output);
+        exec('git commit -a -m"I found changes and committed them"', $output);
+        
+        // Stash local changes
+        //exec('git stash clear', $output);
+        //exec('git stash save --keep-index', $output);
+  
+        // Discard any changes to tracked files since our last deploy
+        // May be redundant after stash
+        //exec('git reset --hard HEAD', $output);
+  
+        // Update the local repository
+        exec('git pull '.$this->_remote.' '.$this->_branch, $output);
+  
+        // Apply stash and drop from stack
+        //exec('git stash pop', $output);
+        
+        //exec('git add -A', $output);
+        //exec('git commit -a -m"I found changes and committed them"', $output);
+        exec('git push '.$this->_remote.' '.$this->_branch, $output);
+        
+        // Pull again in case we were busy while changes came in
+        // exec('git pull '.$this->_remote.' '.$this->_branch, $output);
+  
+        // Secure the .git directory
+        exec('chmod -R og-rx .git');
+        // $this->log('Securing .git directory... ');
+  
+        /*
+        if (is_callable($this->post_deploy))
+        {
+            call_user_func($this->post_deploy, $this->_data);
+        }
+        */
+  
+        $this->log('Deployment successful.');
+    }
+    catch (Exception $e)
+    {
+        $this->log($e, 'ERROR');
+    }
   }
+
 
 }
 
